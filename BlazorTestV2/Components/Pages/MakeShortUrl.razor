@@ -1,0 +1,28 @@
+﻿@page "/Make"
+@using BlazorTestV2.Service
+@using BlazorTestV2.Model
+
+<h3>MakeShortUrl</h3>
+
+Your Original URL: <input type="text mt-3" class="form-control" @bind-value="newURL" />
+
+<button class="btn btn-primary mt-3 mb-3" @onclick="HandleSubmit">Get Short URL</button>
+<br />
+Your Short URL: <input type="text mt-3 d-inline" class="form-control" @bind-value="shortURL" />
+
+@code {
+    private string newURL { get; set; }
+    private string shortURL { get; set; }
+
+    private void HandleSubmit()
+    {
+        M_URL mUrl = new()
+        {
+            URL = newURL
+        };
+
+        ShortURL sUrl = new();
+        if (sUrl.Create(ref mUrl))
+            shortURL = "https://localhost/Go?s=" + mUrl.ShortCode;
+    }
+}

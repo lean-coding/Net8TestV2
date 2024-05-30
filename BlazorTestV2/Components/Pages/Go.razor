@@ -1,0 +1,30 @@
+﻿@page "/Go"
+@inject IHttpContextAccessor httpContextAccessor
+@inject NavigationManager Navi
+
+<h3>Go</h3>
+<div>
+    QueryString =<span>@s</span>
+</div>
+
+@code {
+
+    [SupplyParameterFromQuery] public string? s { get; set; }
+
+    private string OriUrl = "";
+
+    protected override void OnInitialized()
+    {
+        BlazorTestV2.Service.ShortURL sUrl = new();
+        OriUrl = sUrl.GetURLbyShortCode(s);
+        if (!string.IsNullOrEmpty(OriUrl))
+            httpContextAccessor.HttpContext.Response.Redirect(OriUrl);
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!string.IsNullOrEmpty(OriUrl))
+            Navi.NavigateTo(OriUrl, false);
+    }
+
+}

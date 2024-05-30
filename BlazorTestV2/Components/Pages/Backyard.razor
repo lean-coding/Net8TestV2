@@ -1,0 +1,69 @@
+﻿@page "/backyard"
+@using BlazorTestV2.Database
+@using System.Data
+
+<h3>Backyard</h3>
+
+<button class="btn btn-primary" @onclick="HandleCreateDB">Create Table</button>
+<div>
+    <span>@returnMsg</span>
+</div>
+
+<div class="container">
+    M_URL records:
+    @if (dtUrl != null && dtUrl.Rows.Count > 0)
+    {
+        @foreach (DataRow dr in dtUrl.Rows)
+        {
+            <div class="row">
+                <div class="col-2">@dr["SN"].ToString()</div>
+                <div class="col-6">@dr["URL"].ToString()</div>
+                <div class="col-4">@dr["ShortCode"].ToString()</div>
+            </div>
+        }
+    }
+
+</div>
+
+@code {
+
+    private string returnMsg{ get; set; }
+    private DataTable dtUrl { get; set; }
+
+    private void HandleCreateDB()
+    {
+        returnMsg = "";
+
+        try
+        {
+            // Create Database "ShortURL"
+            SQLiteHelper.CreateDBFile("ShortURL.sqlite");
+            returnMsg += $" Database [ShortURL] has been created.";
+
+            // Create Table
+            string sql = @" 
+CREATE TABLE IF NOT EXISTS M_URL  (
+    SN INTEGER PRIMARY KEY AUTOINCREMENT,
+    URL NVARCHAR(300),
+    ShortCode NVARCHAR(20) ); ";
+            SQLiteHelper.CreateTable(sql);
+            returnMsg += $" Table [M_URL] has been created.";
+
+            // Insert Sample data
+            sql = @"Insert Into M_URL (URL, ShortCode)
+                Values ('https://google.com.tw', 'X001'); ";
+            SQLiteHelper.ExecuteNonQuery(sql);
+            returnMsg += $" [M_URL] record has been inserted.";
+
+            // Select Sample data
+            sql = "Select * From M_URL; ";
+            dtUrl = SQLiteHelper.SqlTable(sql);
+        }
+        catch (Exception ex)
+        {
+            returnMsg = ex.ToString();
+        }
+
+    }
+
+}
