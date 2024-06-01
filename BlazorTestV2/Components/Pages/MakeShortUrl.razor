@@ -4,25 +4,82 @@
 
 <h3>MakeShortUrl</h3>
 
-Your Original URL: <input type="text mt-3" class="form-control" @bind-value="newURL" />
+<Field Horizontal>
+    <FieldLabel ColumnSize="ColumnSize.Is2">Your Original URL</FieldLabel>
+    <FieldBody ColumnSize="ColumnSize.Is10">
+        <TextEdit Placeholder="Input your original URL, for example : https://abc.com" @bind-Text="@newURL" />
+    </FieldBody>
+</Field>
 
-<button class="btn btn-primary mt-3 mb-3" @onclick="HandleSubmit">Get Short URL</button>
-<br />
-Your Short URL: <input type="text mt-3 d-inline" class="form-control" @bind-value="shortURL" />
+<Field Horizontal>
+     <FieldBody ColumnSize="ColumnSize.Is12" TextAlignment=TextAlignment.Center>
+        <Button Color="Color.Primary" Clicked="@HandleSubmit">Get Short URL</Button>
+    </FieldBody>
+</Field>
+
+<Field Horizontal>
+    <FieldLabel ColumnSize="ColumnSize.Is2">Your Short URL</FieldLabel>
+    <FieldBody ColumnSize="ColumnSize.Is10">
+        <TextEdit @bind-Text="@shortURL" />
+    </FieldBody>
+</Field>
+
+<Modal @bind-Visible="@modalVisible">
+    <ModalContent Centered>
+        <ModalHeader TextColor=TextColor.Warning>
+            <ModalTitle>Warning：</ModalTitle>
+            <CloseButton />
+        </ModalHeader>
+        <ModalBody>
+            @modalMessage
+        </ModalBody>
+        <ModalFooter>
+            <Button Color="Color.Secondary" Clicked="@HideModal">Close</Button>
+        </ModalFooter>
+    </ModalContent>
+</Modal>
 
 @code {
+    #region 變數區
     private string newURL { get; set; }
     private string shortURL { get; set; }
+    private bool modalVisible { get; set; }
+    private string modalMessage { get; set; }
+    #endregion
 
+    #region 事件控制區
     private void HandleSubmit()
     {
-        M_URL mUrl = new()
+        if (FormCheck())
         {
-            URL = newURL
-        };
+            M_URL mUrl = new()
+                {
+                    URL = newURL
+                };
 
-        ShortURL sUrl = new();
-        if (sUrl.Create(ref mUrl))
-            shortURL = "https://localhost/Go?s=" + mUrl.ShortCode;
+            ShortURL sUrl = new();
+            if (sUrl.Create(ref mUrl))
+                shortURL = "https://localhost/Go?s=" + mUrl.ShortCode;
+        }
+        else
+            modalVisible = true;
     }
+
+    private void HideModal()
+    {
+        modalVisible = false;
+    }
+    #endregion
+
+    # region 其他函數區
+    private bool FormCheck()
+    {
+        modalMessage = "";
+        if (string.IsNullOrEmpty(newURL))
+            modalMessage += "Please input Your Original URL.";
+        else if (newURL.ToLower().Substring(8) != "https://" || newURL.ToLower().Substring(7) != "http://")
+            modalMessage += "Your Original URL.must start with https:// or http://";
+        return string.IsNullOrEmpty(modalMessage);
+    }
+    #endregion
 }

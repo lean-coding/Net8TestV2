@@ -1,4 +1,7 @@
 using BlazorTestV2.Components;
+using Blazorise;
+using Blazorise.Bootstrap5;
+using Blazorise.Icons.FontAwesome;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +10,14 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+builder.Services
+    .AddBlazorise(options =>
+    {
+        options.Immediate = true;
+    })
+    .AddBootstrap5Providers()
+    .AddFontAwesomeIcons();
 
 var app = builder.Build();
 
