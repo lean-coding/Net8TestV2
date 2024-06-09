@@ -1,4 +1,6 @@
 ﻿@inherits LayoutComponentBase
+@inject ILogger<MyLayout> Logger
+@inject IJSRuntime js
 
 <div class="index-page">
     <MyNavi />
@@ -64,5 +66,21 @@
     <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
 
 </div>
+
+@code {
+
+    protected override async Task OnInitializedAsync()
+    {
+        Logger.LogInformation("MyLayout Initialize - Information.");
+        Logger.LogWarning("MyLayout Initialize - Warning.");
+
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await js.InvokeVoidAsync("console.log", "My Initialize Initialize.");
+    }
+
+}
 
 

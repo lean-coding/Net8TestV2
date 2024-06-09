@@ -19,6 +19,8 @@ builder.Services
     .AddBootstrap5Providers()
     .AddFontAwesomeIcons();
 
+builder.Logging.SetMinimumLevel(LogLevel.Warning);
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
