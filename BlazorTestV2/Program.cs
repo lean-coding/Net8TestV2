@@ -2,6 +2,7 @@ using BlazorTestV2.Components;
 using Blazorise;
 using Blazorise.Bootstrap5;
 using Blazorise.Icons.FontAwesome;
+using BlazorTestV2.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +21,15 @@ builder.Services
     .AddFontAwesomeIcons();
 
 builder.Logging.SetMinimumLevel(LogLevel.Warning);
+
+#region ¦Û­q LoggerProvider
+using var loggerFactory = LoggerFactory.Create(builder =>
+{
+    builder.AddProvider(new MyLoggerProvider());
+});
+var logger = loggerFactory.CreateLogger<Program>();
+logger.LogInformation("BlazorTestV2 program has started up!");
+#endregion
 
 var app = builder.Build();
 
