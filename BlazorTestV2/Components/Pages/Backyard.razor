@@ -36,11 +36,11 @@
 
         try
         {
-            // Create Database "ShortURL"
+            #region Create Database "ShortURL"
             SQLiteHelper.CreateDBFile("ShortURL.sqlite");
             returnMsg += $" Database [ShortURL] has been created.";
 
-            // Create Table
+            // Create Table M_URL
             string sql = @" 
 CREATE TABLE IF NOT EXISTS M_URL  (
     SN INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -58,6 +58,28 @@ CREATE TABLE IF NOT EXISTS M_URL  (
             // Select Sample data
             sql = "Select * From M_URL; ";
             dtUrl = SQLiteHelper.SqlTable(sql);
+            #endregion
+
+            #region  Create DataTable "L_EventLog"
+            // Create Table
+            sql = @"
+CREATE TABLE IF NOT EXISTS L_EventLog  (
+    SN INTEGER PRIMARY KEY AUTOINCREMENT,
+    EventId VARCHAR(50),
+    LogLevel  VARCHAR(50),
+    ClassName  VARCHAR(50),
+    LogContent NVARCHAR(1000),
+    LogDate Datetime ); ";
+            SQLiteHelper.CreateTable(sql);
+            returnMsg += $" Table [L_EventLog] has been created.";
+
+            // Insert Sample data
+            sql = @"Insert Into L_EventLog (EventId, LogLevel, ClassName, LogContent, LogDate)
+                Values ( '2345001', 'Information', 'Table Initial', 'LogTest', DATETIME('NOW') ); ";
+            SQLiteHelper.ExecuteNonQuery(sql);
+            returnMsg += $" [L_EventLog] record has been inserted.";
+            #endregion
+
         }
         catch (Exception ex)
         {

@@ -1,13 +1,17 @@
-﻿namespace BlazorTestV2.Service
+﻿using BlazorTestV2.Database;
+using BlazorTestV2.Model;
+using Dapper;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Extensions.Logging;
+
+namespace BlazorTestV2.Service
 {
-    public class MyLogger : ILogger
+    public sealed class MyLogger : ILogger
     {
         IConfiguration config = new ConfigurationBuilder()
                     .AddJsonFile("appsettings.json")
                     .Build();
-
-        private string logPath
-        {
+        private string logPath {
             get
             {
                 string path = "";
@@ -18,26 +22,33 @@
                     path = Environment.CurrentDirectory + @"\\Log\\";
                     return path;
                 }
-
+                    
             }
         }
-        public IDisposable BeginScope<TState>(TState state)
+        public IDisposable BeginScope<TState>(TState State)
         {
             return null;
         }
 
-        public bool IsEnabled(LogLevel logLevel)
+        public bool IsEnabled(LogLevel LogLevel)
         {
-            return true;
+            LogLevel targetLevel = config.GetValue<LogLevel>("Logging:MyLoggerProvider:MinimumLogLevel");
+            return (LogLevel.CompareTo(targetLevel) >= 0);
         }
 
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+        public void Log<TState>(LogLevel LogLevel, EventId EventId, TState State, Exception Exception, Func<TState, Exception, string> Formatter)
         {
-            //寫入 Console
-            Console.WriteLine(formatter(state, exception));
+           if (IsEnabled(LogLevel))
+           {
+                //寫入 Console
+                //Console.WriteLine(formatter(state, exception));
 
-            //寫入文字檔
-            WriteTextLog<TState>(logLevel, eventId, state, exception);
+                //寫入文字檔
+                WriteTextLog<TState>(LogLevel, EventId, State, Exception);
+
+                //寫入資料表
+                WriteDBLog<TState>(LogLevel, EventId, State, Exception);
+            }
         }
 
         private void WriteTextLog<TState>(LogLevel LogLevel, EventId EventId, TState State, Exception Exception)
@@ -77,5 +88,58 @@
                 sw.WriteLine("");
             }
         }
+
+        private void WriteDBLog<TState>(LogLevel LogLevel, EventId EventId, TState State, Exception Exception)
+        {
+            string msg = "";
+            if (State != null)
+                msg += $": {State};";
+            if (Exception != null)
+                msg += $" Exp: {Exception};";
+
+            L_EventLog log = new()
+            {
+                LogLevel = LogLevel.ToString(),
+                EventId = EventId.ToString(),
+                ClassName = "",
+                LogContent = msg
+            };
+
+            try
+            {
+                string sql = @"
+INSERT INTO L_EventLog 
+(
+    EventId, 
+    LogLevel, 
+    ClassName, 
+    LogContent, 
+    LogDate
+)
+VALUES
+( 
+    @EventId,
+    @LogLevel,
+    @ClassName,
+    @LogContent,
+    DATETIME('NOW') 
+);
+        
+SELECT last_insert_rowid(); ";
+
+                using (var conn = SQLiteHelper.dbConnection())
+                {
+                    log.SN = conn.QuerySingle<int>(sql, log);
+                }
+            }
+            catch (Exception ex) { }
+        }
+
+    }
+
+    public sealed class MyLoggerConfiguration
+    {
+        LogLevel MinimumLogLevel { get; set; }
+        string LogPath { get; set; }
     }
 }

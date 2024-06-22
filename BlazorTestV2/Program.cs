@@ -1,8 +1,11 @@
 using BlazorTestV2.Components;
+using BlazorTestV2.Service;
 using Blazorise;
 using Blazorise.Bootstrap5;
 using Blazorise.Icons.FontAwesome;
-using BlazorTestV2.Service;
+using Microsoft.Extensions.Hosting;
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,18 +23,17 @@ builder.Services
     .AddBootstrap5Providers()
     .AddFontAwesomeIcons();
 
-builder.Logging.SetMinimumLevel(LogLevel.Warning);
+//builder.Logging.SetMinimumLevel(LogLevel.Warning);
 
 #region ¦Û­q LoggerProvider
-using var loggerFactory = LoggerFactory.Create(builder =>
-{
-    builder.AddProvider(new MyLoggerProvider());
-});
-var logger = loggerFactory.CreateLogger<Program>();
-logger.LogInformation("BlazorTestV2 program has started up!");
+builder.Logging.ClearProviders();
+builder.Logging.AddMyLogger();
 #endregion
 
 var app = builder.Build();
+
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+logger.LogInformation("BlazorTestV2 program has started up!");
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

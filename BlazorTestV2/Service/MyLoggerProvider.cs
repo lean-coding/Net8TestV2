@@ -1,13 +1,20 @@
 ﻿namespace BlazorTestV2.Service
 {
-    public class MyLoggerProvider : ILoggerProvider
+    public sealed class MyLoggerProvider : ILoggerProvider
     {
-        public ILogger CreateLogger(string categoryName)
+        private ILogger logger;
+
+        public MyLoggerProvider() 
         {
-            return new MyLogger(); 
+            logger = new MyLogger();
         }
 
-        public void Dispose() { }
+        public ILogger CreateLogger(string categoryName)
+        {
+            return logger;
+        }
+
+        public void Dispose() {}
 
     }
 }
