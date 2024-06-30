@@ -1,0 +1,7 @@
+﻿.nav-link .cssMenu {
+    color: white;
+}
+
+.nav-link .cssMenu:focus {
+    color: #ffc107;
+}

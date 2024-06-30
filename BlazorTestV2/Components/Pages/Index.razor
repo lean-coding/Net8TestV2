@@ -1,61 +1,146 @@
-﻿@using BlazorTestV2.Components.Layout
-@layout MyLayout
+﻿@page "/"
 @page "/Index"
+@layout MyLayout
+@using BlazorTestV2.Components.Layout
+@using BlazorTestV2.Service
+@using BlazorTestV2.Model
+@inject IJSRuntime js
 
+<script>
+    function CopyToClipboard(target) { 
+        navigator.clipboard.writeText(target);
+        alert("The short URL has Copied !");
+    }
+</script>
 
-<!-- Hero Section -->
-<section id="hero" class="hero section">
+<div class="row justify-content-center text-center" data-aos="fade-up" data-aos-delay="100">
+    <div class="col-xl-6 col-lg-8">
+        <h3 class="">Make your short URL here..<span style="color: var(--accent-color);">.</span></h3>
+        <!-- 網址輸入 -->
+        <Addons>
+            <Addon AddonType="AddonType.Body">
+                <TextEdit Placeholder="Key-in your original URL here, for example, https://www.yahoo.com"
+                          @bind-Text="newURL" Background=Background.Transparent Border=Border.Primary TextColor=TextColor.White />
+            </Addon>
+            <Addon AddonType="AddonType.End">
+                <AddonLabel Background=Background.Primary Border=Border.Primary Style="cursor:pointer;"
+                            @onclick="HandleSubmit">Get Short URL</AddonLabel>
+            </Addon>
+        </Addons>
+        
+        @if (!string.IsNullOrEmpty(shortURL))
+        {
+            <!-- 顯示短網址 -->
+            <br />
+            <Field  Horizontal>
+                 <FieldBody ColumnSize="ColumnSize.Is12" TextAlignment=TextAlignment.Start>
+                    Your Short URL:
+                </FieldBody>
+            </Field>
 
-    <img src="assets/img/hero-bg.jpg" alt="" data-aos="fade-in" class="">
-
-    <div class="container">
-
-        <div class="row justify-content-center text-center" data-aos="fade-up" data-aos-delay="100">
-            <div class="col-xl-6 col-lg-8">
-                <h3 class="">Make your short URL here..<span style="color: var(--accent-color);">.</span></h3>
-                <Addons>
-                    <Addon AddonType="AddonType.Body">
-                        <TextEdit Placeholder="Key-in your original URL here, for example, https://www.yahoo.com" 
-                            Background=Background.Transparent  Border=Border.Warning TextColor=TextColor.White />
-                    </Addon>
-                    <Addon AddonType="AddonType.End">
-                        <AddonLabel Background=Background.Warning Border=Border.Warning>Get Short URL</AddonLabel>
-                    </Addon>
-                </Addons>
-                <p>the most <span style="color: var(--accent-color);">E</span>asy way to <span style="color: var(--accent-color);">S</span>hare your URL</p>
-            </div>
-        </div>
-
-        <div class="row gy-4 mt-5 justify-content-center" data-aos="fade-up" data-aos-delay="200">
-            <div class="col-xl-2 col-md-4" data-aos="fade-up" data-aos-delay="300">
-                <div class="icon-box">
-                    <i class="bi bi-spellcheck"></i>
-                    <h3><a href="">Query and Verify</a></h3>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4" data-aos="fade-up" data-aos-delay="300">
-                <div class="icon-box">
-                    <i class="bi bi-share"></i>
-                    <h3><a href="">Manage Short URL</a></h3>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4" data-aos="fade-up" data-aos-delay="600">
-                <div class="icon-box">
-                    <i class="bi bi-graph-up-arrow"></i>
-                    <h3><a href="">Stats</a></h3>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4" data-aos="fade-up" data-aos-delay="700">
-                <div class="icon-box">
-                    <i class="bi bi-person-plus"></i>
-                    <h3><a href="">My Account</a></h3>
-                </div>
-            </div>
-        </div>
-
+            <Addons>
+                <Addon AddonType="AddonType.Body">
+                    <TextEdit Placeholder="" @bind-Text="shortURL" />
+                </Addon>
+                <Addon AddonType="AddonType.End">
+                    <AddonLabel Style="cursor:pointer;" @onclick="HandleCopy"><Icon Name="IconName.Copy" /></AddonLabel>
+                </Addon>
+            </Addons>
+        }
+        <p>the most <span style="color: var(--accent-color);">E</span>asy way to <span style="color: var(--accent-color);">S</span>hare your URL</p>
     </div>
+</div>
 
-</section><!-- /Hero Section -->
+<div class="row gy-4 mt-5 justify-content-center" data-aos="fade-up" data-aos-delay="200">
+    <div class="col-xl-2 col-md-4" data-aos="fade-up" data-aos-delay="300">
+        <div class="icon-box">
+            <i class="bi bi-spellcheck"></i>
+            <h3><a href="">Query and Verify</a></h3>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4" data-aos="fade-up" data-aos-delay="300">
+        <div class="icon-box">
+            <i class="bi bi-share"></i>
+            <h3><a href="">Manage Short URL</a></h3>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4" data-aos="fade-up" data-aos-delay="600">
+        <div class="icon-box">
+            <i class="bi bi-graph-up-arrow"></i>
+            <h3><a href="">Stats</a></h3>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4" data-aos="fade-up" data-aos-delay="700">
+        <div class="icon-box">
+            <i class="bi bi-person-plus"></i>
+            <h3><a href="">My Account</a></h3>
+        </div>
+    </div>
+</div>
+
+<Modal @bind-Visible="@modalVisible" Background=Background.Dark>
+    <ModalContent Centered>
+        <ModalHeader>
+            <ModalTitle TextColor=TextColor.Warning>Warning：</ModalTitle>
+            <CloseButton />
+        </ModalHeader>
+        <ModalBody TextColor=TextColor.Primary>
+            @modalMessage
+        </ModalBody>
+        <ModalFooter>
+            <Button Color="Color.Secondary" Clicked="@HideModal">Close</Button>
+        </ModalFooter>
+    </ModalContent>
+</Modal>
+
 @code {
+    #region 變數區
+    private string newURL { get; set; }
+    private string shortURL { get; set; }
+    private bool modalVisible { get; set; }
+    private string modalMessage { get; set; }
+    #endregion
 
+    #region 事件控制區
+    private void HandleSubmit()
+    {
+        if (FormCheck())
+        {
+            M_URL mUrl = new()
+                {
+                    URL = newURL
+                };
+
+            ShortURL sUrl = new();
+            if (sUrl.Create(ref mUrl))
+                shortURL = "https://localhost/Go?s=" + mUrl.ShortCode;
+        }
+        else
+            modalVisible = true;
+    }
+
+    private async Task HandleCopy()
+    {
+        await js.InvokeVoidAsync("CopyToClipboard", shortURL);
+    }
+
+    private void HideModal()
+    {
+        modalVisible = false;
+    }
+    #endregion
+
+    #region 其他函數區
+    private bool FormCheck()
+    {
+        modalMessage = "";
+        if (string.IsNullOrEmpty(newURL))
+            modalMessage += "Please input Your Original URL.";
+        else if (newURL.Length <=7)
+            modalMessage += "Please input a real URL with https:// or http://.";
+        else if (newURL.ToLower().Substring(0, 8) != "https://" && newURL.ToLower().Substring(0, 7) != "http://")
+            modalMessage += "Your Original URL.must start with https:// or http://";
+        return string.IsNullOrEmpty(modalMessage);
+    }
+    #endregion
 }

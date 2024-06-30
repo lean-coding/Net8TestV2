@@ -1,23 +1,49 @@
-﻿<header id="header" class="header d-flex align-items-center fixed-top">
-    <div class="container-fluid container-xl position-relative d-flex align-items-center justify-content-between">
+﻿@inject NavigationManager navi
 
-        <a href="index.html" class="logo d-flex align-items-center me-auto me-lg-0">
-            <!-- Uncomment the line below if you also wish to use an image logo -->
-            <!-- <img src="assets/img/logo.png" alt=""> -->
-            <h1 class="sitename">BlazorTest V2</h1>
-            <span>.</span>
-        </a>
+<header id="header" class="header d-flex align-items-center fixed-top">
 
-        <nav id="navmenu" class="navmenu">
-            <ul>
-                <li><a href="#hero" class="">Home<br></a></li>
-                <li><a href="#about">My URL</a></li>
-                <li><a href="#contact">Membership</a></li>
-            </ul>
-            <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
-        </nav>
+    <Bar Breakpoint="Breakpoint.Desktop" Width="Width.Is100" Margin="Margin.Is5.OnX">
+        <BarBrand Width="Width.Is33">
+            <a href="/" class="logo d-flex align-items-center me-auto me-lg-0">
+                <h1 class="sitename">BlazorTest V2</h1>
+                <span>.</span>
+            </a>
+        </BarBrand>
+        <BarToggler />
+        <BarMenu>
+            <BarStart Padding="Padding.Is5.OnX">
+                <BarItem>
+                    <BarLink To="Index" Class="text-white">Home</BarLink>
+                </BarItem>
+                <BarItem>
+                    <BarLink To="MyUrl" Class="text-white">My URL</BarLink>
+                </BarItem>
+                <BarItem>
+                    <BarLink To="Member" Class="text-white">Membership</BarLink>
+                </BarItem>
+            </BarStart>
 
-        <a class="btn-getstarted" href="index.html#about">Log On</a>
+            <BarEnd>
+                <BarItem>
+                    <Button Class="btn-getstarted" @onclick="HandleLogon">Log on</Button>
+                </BarItem>
+            </BarEnd>
+        </BarMenu>
+    </Bar>
 
-    </div>
 </header>
+
+@code {
+    private void HandleLogon()
+    {
+        navi.NavigateTo("/Logon");
+    }
+
+}
+
+
+
+
+
+
+

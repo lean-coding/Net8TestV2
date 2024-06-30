@@ -6,9 +6,17 @@
     <MyNavi />
 
     <main class="main">
-        @Body
+        <!-- Hero Section -->
+        <section id="hero" class="hero section">
+        <img src="assets/img/hero-bg.jpg" alt="" data-aos="fade-in" class="">
+        <div class="container">
+            @Body
+        </div>
+        </section>
+        <!-- /Hero Section -->        
     </main>
 
+    <!-- Footer Section -->    
     <footer id="footer" class="footer">
         <div class="row bg-light">&nbsp;</Div>
         <div class="footer-top">
@@ -73,7 +81,6 @@
     {
         Logger.LogInformation("MyLayout Initialize - Information.");
         Logger.LogWarning("MyLayout Initialize - Warning.");
-
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
