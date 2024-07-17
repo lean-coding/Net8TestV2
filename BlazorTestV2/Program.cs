@@ -33,7 +33,7 @@ builder.Logging.AddMyLogger();
 var app = builder.Build();
 
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
-logger.LogInformation("BlazorTestV2 program has started up!");
+logger.LogInformation("BlazorTestV2 program has started!");
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

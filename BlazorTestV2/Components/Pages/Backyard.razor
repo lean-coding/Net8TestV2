@@ -1,91 +1,188 @@
 ﻿@page "/backyard"
 @using BlazorTestV2.Database
 @using System.Data
+@inject ILogger<Backyard> Logger
 
 <h3>Backyard</h3>
 
-<button class="btn btn-primary" @onclick="HandleCreateDB">Create Table</button>
+<!-- Section of Create SQLite Database -->
+<Field>
+    <FieldLabel>Create SQLite database</FieldLabel>
+    <FieldBody>
+        <Button Color="Color.Primary" @onclick="HandleCreateDB">Create DB</Button>
+    </FieldBody>
+</Field>
+
+<!-- Section of Tables -->
+<Table>
+    <TableHeader>
+        <TableRow>
+            <TableHeaderCell>Data Table</TableHeaderCell>
+            <TableHeaderCell>Status</TableHeaderCell>
+            <TableHeaderCell>Count</TableHeaderCell>
+            <TableHeaderCell>Function</TableHeaderCell>
+        </TableRow>
+    </TableHeader>
+    <TableBody>
+        @foreach (string table in tableList)
+        {
+            <TableRow>
+                <TableRowHeader>@table</TableRowHeader>
+                <TableRowCell>@GetDatatableStatus(table)</TableRowCell>
+                    <TableRowCell>@GetDatatableCount(table)</TableRowCell>
+                    <TableRowCell>
+                        <Button Color="Color.Primary" onclick=@(() => CreateTable(table))>Create Table</Button>
+                        <Button Color="Color.Primary" onclick=@(() => ViewRecord(table, 20))>View Record</Button>
+                    </TableRowCell>
+            </TableRow>
+        }
+    </TableBody>
+</Table>
+
+<!-- Section of Excution Message -->
 <div>
-    <span>@returnMsg</span>
+    <Text>
+        @((MarkupString)execMsg)
+    </Text>
 </div>
 
+<!-- Section of Table Record -->
 <div class="container">
-    M_URL records:
-    @if (dtUrl != null && dtUrl.Rows.Count > 0)
+    
+    @if (!string.IsNullOrEmpty(selectedTable))
     {
-        @foreach (DataRow dr in dtUrl.Rows)
-        {
-            <div class="row">
-                <div class="col-2">@dr["SN"].ToString()</div>
-                <div class="col-6">@dr["URL"].ToString()</div>
-                <div class="col-4">@dr["ShortCode"].ToString()</div>
-            </div>
-        }
+        <Card>
+            <CardHeader>
+                Selected Table: @selectedTable
+            </CardHeader>
+
+            <CardBody>
+                @if (dtView != null && dtView.Rows.Count > 0)
+                {
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                @for (int i = 0; i < dtView.Columns.Count; i++)
+                                {
+                                    <td>@dtView.Columns[i].Caption</td>
+                                    @* <TableHeaderCell>@dtView.Columns[i].Caption</TableHeaderCell> *@
+                                }
+                            </TableRow>
+                        </TableHeader>
+                         @foreach (DataRow dr in dtView.Rows)
+                        {
+                            <TableRow>
+                                @for (int j = 0; j < dtView.Columns.Count; j++)
+                                {
+                                    <td>@dr[j].ToString()</td>
+                                }
+                            </TableRow>
+                        }
+                    </Table>
+                }
+                else
+                {
+                    <div class="row">No Record.</div>
+                }
+            </CardBody>
+        </Card>
     }
 
 </div>
 
 @code {
 
-    private string returnMsg{ get; set; }
-    private DataTable dtUrl { get; set; }
-
-    private void HandleCreateDB()
+    private string execMsg{ get; set; }
+    private string selectedTable { get; set; }
+    private DataTable dtView { get; set; }
+    List<string> tableList = new List<string>
     {
-        returnMsg = "";
+        "M_URL", 
+        "L_EventLog",
+        "S_Member"
+    };
 
+    #region 事件控制
+    protected async Task HandleCreateDB()
+    {
         try
         {
-            #region Create Database "ShortURL"
-            SQLiteHelper.CreateDBFile("ShortURL.sqlite");
-            returnMsg += $" Database [ShortURL] has been created.";
-
-            // Create Table M_URL
-            string sql = @" 
-CREATE TABLE IF NOT EXISTS M_URL  (
-    SN INTEGER PRIMARY KEY AUTOINCREMENT,
-    URL NVARCHAR(300),
-    ShortCode NVARCHAR(20) ); ";
-            SQLiteHelper.CreateTable(sql);
-            returnMsg += $" Table [M_URL] has been created.";
-
-            // Insert Sample data
-            sql = @"Insert Into M_URL (URL, ShortCode)
-                Values ('https://google.com.tw', 'X001'); ";
-            SQLiteHelper.ExecuteNonQuery(sql);
-            returnMsg += $" [M_URL] record has been inserted.";
-
-            // Select Sample data
-            sql = "Select * From M_URL; ";
-            dtUrl = SQLiteHelper.SqlTable(sql);
-            #endregion
-
-            #region  Create DataTable "L_EventLog"
-            // Create Table
-            sql = @"
-CREATE TABLE IF NOT EXISTS L_EventLog  (
-    SN INTEGER PRIMARY KEY AUTOINCREMENT,
-    EventId VARCHAR(50),
-    LogLevel  VARCHAR(50),
-    ClassName  VARCHAR(50),
-    LogContent NVARCHAR(1000),
-    LogDate Datetime ); ";
-            SQLiteHelper.CreateTable(sql);
-            returnMsg += $" Table [L_EventLog] has been created.";
-
-            // Insert Sample data
-            sql = @"Insert Into L_EventLog (EventId, LogLevel, ClassName, LogContent, LogDate)
-                Values ( '2345001', 'Information', 'Table Initial', 'LogTest', DATETIME('NOW') ); ";
-            SQLiteHelper.ExecuteNonQuery(sql);
-            returnMsg += $" [L_EventLog] record has been inserted.";
-            #endregion
-
+            string msg = Startup.CreateDatabase();
+            MessageAppendLine(msg);
         }
         catch (Exception ex)
         {
-            returnMsg = ex.ToString();
+            Logger.LogWarning(ex.ToString());
+            MessageAppendLine(ex);
         }
-
     }
 
+    protected async Task CreateTable(string TableName)
+    {
+        try
+        {
+            string msg = Startup.CreateTable(TableName);
+            MessageAppendLine(msg);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex.ToString());
+            MessageAppendLine(ex);
+        }
+    }
+
+    protected async Task ViewRecord(string TableName, int Top)
+    {
+        selectedTable = TableName;
+        try
+        {
+            string sql = $"Select * From {TableName} LIMIT {Top}; ";
+            dtView = SQLiteHelper.SqlTable(sql);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex.ToString());
+            MessageAppendLine(ex);
+        }
+        StateHasChanged();
+    }
+
+    #endregion
+
+    #region 私有函數
+    private string GetDatatableStatus(string TableName)
+    {
+        try
+        {
+            return Startup.GetDatatableStatus(TableName);
+        }
+        catch (Exception ex)
+        {
+            MessageAppendLine(ex);
+            Logger.LogWarning(ex.ToString());
+            return "Got Error" + "<br/>";
+        }
+    }
+
+    private string GetDatatableCount(string TableName)
+    {
+        try
+        {
+            return Startup.GetDatatableCount(TableName);
+        }
+        catch (Exception ex)
+        {
+            MessageAppendLine(ex);
+            Logger.LogWarning(ex.ToString());
+            return "";
+        }
+    }
+
+    private void MessageAppendLine(object Message)
+    {
+        execMsg += Message.ToString() + "<br/>";
+        StateHasChanged();
+    }
+
+    #endregion
 }
