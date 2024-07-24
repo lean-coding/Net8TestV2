@@ -1,0 +1,40 @@
+﻿@page "/Logon"
+@layout MyLayout
+@using BlazorTestV2.Components.Layout
+@using BlazorTestV2.Model
+@inject IMessageService Message
+
+<Tabs SelectedTab="@selectedTab" SelectedTabChanged="@OnSelectedTabChanged"
+      TabPosition="TabPosition.Top" Width="Width.Is50" Border="Border.Is0">
+    <Items>
+        <Tab Name="logon" Background="Background.Transparent" >Logon</Tab>
+        <Tab Name="register" >Register a new account</Tab>
+    </Items>
+    <Content>
+        <TabPanel Name="logon" Border="Border.Is2.RoundedBottom.Primary" Padding="Padding.Is5">
+            <EditForm Model=@member>
+                <TextEdit Placeholder="Your email as the account here..." @bind-Text=member.EMail />
+            </EditForm>
+        </TabPanel>
+        <TabPanel Name="register" Border="Border.Is2.RoundedBottom.Primary" Padding="Padding.Is5">
+            <Register Member=@member></Register>
+        </TabPanel>
+    </Content>
+</Tabs>
+
+@code {
+    string selectedTab = "logon";
+    private S_Member member { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (member == null)
+            member = new();
+    }
+
+    private Task OnSelectedTabChanged(string name)
+    {
+        selectedTab = name;
+        return Task.CompletedTask;
+    }
+}

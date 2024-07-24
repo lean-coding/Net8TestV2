@@ -1,0 +1,113 @@
+﻿@page "/Register"
+@layout MyLayout
+@using BlazorTestV2.Components.Layout
+@using BlazorTestV2.Model
+@inject IMessageService Message
+
+Place enter your information:
+<EditForm Model=@Member>
+    <Field Horizontal>
+        <FieldLabel ColumnSize="ColumnSize.Is2" RequiredIndicator>Nick Name</FieldLabel>
+        <FieldBody ColumnSize="ColumnSize.Is10">
+            <TextEdit @bind-Text=Member.Nickname Placeholder="Your name here..." />
+        </FieldBody>
+    </Field>
+    <Field Horizontal>
+        <FieldLabel ColumnSize="ColumnSize.Is2" RequiredIndicator>EMail</FieldLabel>
+        <FieldBody ColumnSize="ColumnSize.Is10">
+            <TextEdit @bind-Text=Member.EMail Role="TextRole.Email" Placeholder="Your email as the account here..." />
+        </FieldBody>
+    </Field>
+    <Field Horizontal>
+        <FieldLabel ColumnSize="ColumnSize.Is2" RequiredIndicator>Password</FieldLabel>
+        <FieldBody ColumnSize="ColumnSize.Is10">
+            <TextEdit @bind-Text=Member.Password Role="TextRole.Password" Placeholder="Your password here..." />
+        </FieldBody>
+    </Field>
+    <Field Horizontal>
+        <FieldLabel ColumnSize="ColumnSize.Is2" RequiredIndicator>Confirm Password</FieldLabel>
+        <FieldBody ColumnSize="ColumnSize.Is10">
+            <TextEdit @bind-Text=password2 Role="TextRole.Password" Placeholder="Confirm your password again" />
+        </FieldBody>
+    </Field>
+    <Field TextAlignment="TextAlignment.Center">
+        <FieldBody ColumnSize="ColumnSize.Is12">
+            <Button Color="Color.Primary" Margin="Margin.Is2.OnX" Clicked="@HandleRegister">Register</Button>
+            <Button Color="Color.Secondary" Margin="Margin.Is2.OnX" Clicked="@HandleClear">Clear</Button>
+        </FieldBody>
+    </Field>
+</EditForm>
+
+
+
+@code {
+    [Parameter]
+    public S_Member Member { get; set; }
+    private string password2 { get; set; }
+    private Service.Member srvMember = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Member == null)
+            Member = new();
+    }
+
+    private void HandleRegister()
+    {
+        if (CheckRegister(out string ErrMsg))
+        {
+            S_Member mbr = Member;
+            srvMember.Create(ref mbr);
+            Member = mbr;
+
+            Message.Success("Your account is registered!", "Success: ", (x) =>
+            {
+                x.ShowMessageIcon = false;
+                x.CenterMessage = false;    //無效
+                x.MessageClass = "text-dark text-left";
+                x.TitleClass = "text-success";
+            });
+        }
+        else
+        {
+            //Message.Warning(ErrMsg, "Warning: ");
+            Message.Warning(ErrMsg, "Warning: ", (x) =>
+            {
+                x.ShowMessageIcon = false;
+                x.CenterMessage = false;    //無效
+                x.MessageClass = "text-dark text-left";
+                x.TitleClass = "text-warning";
+            });
+        }
+    }
+
+    private void HandleClear()
+    {
+        Member = new();
+    }
+
+    private bool CheckRegister(out string ErrMsg)
+    {
+        ErrMsg = "";
+
+        if (string.IsNullOrEmpty(Member.Nickname))
+            ErrMsg += "Nickname is required! <br />";
+        if (string.IsNullOrEmpty(Member.EMail))
+            ErrMsg += "EMail is required! <br />";
+        else if (CheckEMailHasRegistered())
+            ErrMsg += "EMail has registered! <br />";
+        if (string.IsNullOrEmpty(Member.Password))
+            ErrMsg += "Password is required! <br />";
+        if (Member.Password != password2)
+            ErrMsg += "Two passwords are different!";
+
+        return string.IsNullOrEmpty(ErrMsg);
+    }
+
+    private bool CheckEMailHasRegistered()
+    {
+        Service.Member sMember = new();
+        return sMember.CheckEMailHasRegistered(Member.EMail);
+    }
+
+}
