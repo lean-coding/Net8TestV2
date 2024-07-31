@@ -1,4 +1,8 @@
-﻿@inject NavigationManager navi
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using BlazorTestV2.Service
+@inject NavigationManager navi
+@inject AuthenticationStateProvider provider
+
 
 <header id="header" class="header d-flex align-items-center fixed-top">
 
@@ -25,18 +29,34 @@
 
             <BarEnd>
                 <BarItem>
-                    <Button Class="btn-getstarted" @onclick="HandleLogon">Log on</Button>
+                    <AuthorizeView>
+                        <Authorized>
+                            <Text TextColor="TextColor.White">Welcome! @context.User?.Identity?.Name</Text>
+                            <Button Class="btn-getstarted" @onclick="HandleLogout">Log out</Button>
+                        </Authorized>
+                        <NotAuthorized>
+                            <Button Class="btn-getstarted" @onclick="HandleLogon">Log on</Button>
+                        </NotAuthorized>
+                    </AuthorizeView>
                 </BarItem>
             </BarEnd>
+            
         </BarMenu>
     </Bar>
 
 </header>
 
 @code {
-    private void HandleLogon()
+
+    private async Task HandleLogon()
     {
         navi.NavigateTo("/Logon");
+    }
+
+    private async Task HandleLogout()
+    {
+        var myProvider = (MyAuthenticationStateProvider)provider;
+        await myProvider.UpdateState(null);
     }
 
 }

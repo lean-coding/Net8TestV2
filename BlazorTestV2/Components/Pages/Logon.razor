@@ -2,7 +2,11 @@
 @layout MyLayout
 @using BlazorTestV2.Components.Layout
 @using BlazorTestV2.Model
+@using BlazorTestV2.Service
+@using Microsoft.AspNetCore.Components.Authorization;
+@inject AuthenticationStateProvider provider
 @inject IMessageService Message
+@inject NavigationManager navi
 
 <Tabs SelectedTab="@selectedTab" SelectedTabChanged="@OnSelectedTabChanged"
       TabPosition="TabPosition.Top" Width="Width.Is50" Border="Border.Is0">
@@ -13,7 +17,24 @@
     <Content>
         <TabPanel Name="logon" Border="Border.Is2.RoundedBottom.Primary" Padding="Padding.Is5">
             <EditForm Model=@member>
-                <TextEdit Placeholder="Your email as the account here..." @bind-Text=member.EMail />
+                <Field Horizontal>
+                    <FieldLabel ColumnSize="ColumnSize.Is2" RequiredIndicator>EMail</FieldLabel>
+                    <FieldBody ColumnSize="ColumnSize.Is10">
+                        <TextEdit @bind-Text=member.EMail Role="TextRole.Email" Placeholder="Your email as the account here..." />
+                    </FieldBody>
+                </Field>
+                <Field Horizontal>
+                    <FieldLabel ColumnSize="ColumnSize.Is2" RequiredIndicator>Password</FieldLabel>
+                    <FieldBody ColumnSize="ColumnSize.Is10">
+                        <TextEdit @bind-Text=member.Password Role="TextRole.Password" Placeholder="Your password here..." />
+                    </FieldBody>
+                </Field>
+                <Field TextAlignment="TextAlignment.Center">
+                    <FieldBody ColumnSize="ColumnSize.Is12">
+                        <Button Color="Color.Primary" Margin="Margin.Is2.OnX" Clicked="@HandleLogon">Log on</Button>
+                        <Button Color="Color.Secondary" Margin="Margin.Is2.OnX" Clicked="@HandleForget">Forget Password</Button>
+                    </FieldBody>
+                </Field>
             </EditForm>
         </TabPanel>
         <TabPanel Name="register" Border="Border.Is2.RoundedBottom.Primary" Padding="Padding.Is5">
@@ -23,13 +44,12 @@
 </Tabs>
 
 @code {
-    string selectedTab = "logon";
-    private S_Member member { get; set; }
+    string selectedTab { get; set; } = "logon";
+    private S_Member member { get; set; } = new();
+    private Service.Member srvMember = new();
 
     protected override async Task OnInitializedAsync()
     {
-        if (member == null)
-            member = new();
     }
 
     private Task OnSelectedTabChanged(string name)
@@ -37,4 +57,41 @@
         selectedTab = name;
         return Task.CompletedTask;
     }
+
+    private async Task HandleLogon()
+    {
+        S_Member sMember = await srvMember.CheckLogonMember(member.EMail, member.Password);
+
+        if (sMember != null)
+        {
+            #region 登入成功
+            var myProvider = (MyAuthenticationStateProvider)provider;
+            await myProvider.UpdateState(sMember);
+
+            await Message.Success("You have logged in the system!", "Success: ", (x) =>
+            {
+                x.ShowMessageIcon = false;
+                x.CenterMessage = false;    //無效
+                x.MessageClass = "text-dark text-left";
+                x.TitleClass = "text-success";
+            });
+            navi.NavigateTo("/");
+            #endregion
+        }
+        else
+        {
+            await Message.Warning("EMail and Password are not matched.", "Warning: ", (x) =>
+            {
+                x.ShowMessageIcon = false;
+                x.CenterMessage = false;    //無效
+                x.MessageClass = "text-dark text-left";
+                x.TitleClass = "text-warning";
+            });
+        }
+    }
+
+    private async Task HandleForget()
+    {
+    }
+
 }

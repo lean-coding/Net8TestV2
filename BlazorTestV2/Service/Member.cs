@@ -94,5 +94,34 @@ WHERE EMail = @EMail; ";
             }
         }
 
+        public async Task<S_Member> CheckLogonMember(string EMail, string Password)
+        {
+            string ErrorMsg = "";
+            S_Member member;
+            try
+            {
+                string sql = @"
+SELECT * 
+FROM S_Member
+WHERE EMail = @EMail AND Password = @Password ; ";
+
+                using (var conn = SQLiteHelper.dbConnection())
+                {
+                    member = await conn.QuerySingleOrDefaultAsync<S_Member>(sql, new S_Member()
+                    {
+                        EMail = EMail,
+                        Password = Password
+                    });
+                    if (member != null)
+                        return member;
+                }
+            }
+            catch (Exception ex)
+            {
+                //Log exception later
+            }
+            return null;
+        }
+
     }
 }

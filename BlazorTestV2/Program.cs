@@ -4,6 +4,7 @@ using Blazorise;
 using Blazorise.Bootstrap5;
 using Blazorise.Icons.FontAwesome;
 using Microsoft.Extensions.Hosting;
+using Microsoft.AspNetCore.Components.Authorization;
 
 
 
@@ -29,6 +30,9 @@ builder.Services
 builder.Logging.ClearProviders();
 builder.Logging.AddMyLogger();
 #endregion
+
+builder.Services.AddScoped<AuthenticationStateProvider, MyAuthenticationStateProvider>();
+builder.Services.AddCascadingAuthenticationState();
 
 var app = builder.Build();
 
