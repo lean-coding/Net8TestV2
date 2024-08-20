@@ -63,6 +63,37 @@ CREATE TABLE IF NOT EXISTS S_Member  (
     CreateDate Datetime ); ";
                     #endregion
                 }
+                else if (TableName == "L_Validation")
+                {
+                    #region Create Table L_Validation
+                    sql = @"
+CREATE TABLE IF NOT EXISTS L_Validation  (
+    SN INTEGER PRIMARY KEY AUTOINCREMENT,
+    MemberSN INTEGER,
+    Method  VARCHAR(10),
+    Prefix  VARCHAR(10),
+    TOTP  VARCHAR(10),
+    IsValidate VARCHAR(1),
+    CreateDate Datetime ); ";
+                    #endregion
+                }
+                else if (TableName == "Q_EMail")
+                {
+                    #region Create Table Q_EMail
+                    sql = @"
+CREATE TABLE IF NOT EXISTS Q_EMail  (
+    SN INTEGER PRIMARY KEY AUTOINCREMENT,
+    EMailTo NVARCHAR(50),
+    EMailCC NVARCHAR(500),
+    Subject  NVARCHAR(150),
+    Body  NVARCHAR(500),
+    SendCount INTEGER,
+    IsSend VARCHAR(1),
+    SendDate Datetime, 
+    Sender INTEGER,
+    CreateDate Datetime ); ";
+                    #endregion
+                }
                 #endregion
 
                 // Create Table

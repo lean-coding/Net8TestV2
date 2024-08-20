@@ -33,6 +33,7 @@ builder.Logging.AddMyLogger();
 
 builder.Services.AddScoped<AuthenticationStateProvider, MyAuthenticationStateProvider>();
 builder.Services.AddCascadingAuthenticationState();
+//builder.Services.AddSingleton<Member>();
 
 var app = builder.Build();
 

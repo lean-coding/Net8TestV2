@@ -1,0 +1,178 @@
+﻿@page "/ResetPwd"
+@layout BlazorTestV2.Components.Layout.MyLayout
+@using BlazorTestV2.Model
+@using BlazorTestV2.Service
+@inject IMessageService Message
+@inject IJSRuntime js
+@inject ILogger<ResetPwd> Logger
+@inject NavigationManager navi
+
+<h3>Reset Password</h3>
+<Text TextColor="TextColor.White" TextSize="TextSize.Medium" Class="pb-lg-5">@hint</Text>
+
+<!-- Base Section -->
+<Field Horizontal>
+    <FieldLabel ColumnSize="ColumnSize.Is2" RequiredIndicator>Your EMail</FieldLabel>
+    <FieldBody ColumnSize="ColumnSize.Is10">
+        <TextEdit @bind-Text=eMail Placeholder="Your email here..." />
+    </FieldBody>
+</Field>
+
+<!-- Initial Section -->
+@if (pageMode == "Init")
+{
+    <Field TextAlignment="TextAlignment.Center">
+        <FieldBody ColumnSize="ColumnSize.Is12">
+            <Button Color="Color.Primary" Margin="Margin.Is2.OnX" Clicked="@HandleSendCode">Send Validate Code</Button>
+            <Button Color="Color.Secondary" Margin="Margin.Is2.OnX" Clicked="@HandleBack">Back</Button>
+        </FieldBody>
+    </Field>
+}
+
+<!-- Validate Section -->
+@if (pageMode == "Validate")
+{
+    <Field Horizontal>
+        <FieldLabel ColumnSize="ColumnSize.Is2" RequiredIndicator>Validate Code</FieldLabel>
+        <FieldBody ColumnSize="ColumnSize.Is10">
+             <Addons>
+                 <Addon AddonType="AddonType.Start">
+                    <AddonLabel>@validation.Prefix</AddonLabel>
+                 </Addon>
+                 <Addon AddonType="AddonType.Body">
+                    <TextEdit @bind-Text=valicateCode Placeholder="Input the validate code that you received..." />
+                 </Addon>
+             </Addons>
+        </FieldBody>
+    </Field>
+    <Field TextAlignment="TextAlignment.Center">
+        <FieldBody ColumnSize="ColumnSize.Is12">
+            <Button Color="Color.Primary" Margin="Margin.Is2.OnX" Clicked="@HandleVerify">Verify My Code</Button>
+            <Button Color="Color.Secondary" Margin="Margin.Is2.OnX" Clicked="@HandleBack">Back</Button>
+        </FieldBody>
+    </Field>
+}
+
+<!-- New Password Section -->
+@if (pageMode == "Reset")
+{
+    <Field Horizontal>
+        <FieldLabel ColumnSize="ColumnSize.Is2" RequiredIndicator>New Password</FieldLabel>
+        <FieldBody ColumnSize="ColumnSize.Is10">
+         <TextEdit @bind-Text=newPassword Placeholder="Your new password  here..." />
+        </FieldBody>
+    </Field>
+    <Field Horizontal>
+        <FieldLabel ColumnSize="ColumnSize.Is2" RequiredIndicator>Confirm Password</FieldLabel>
+        <FieldBody ColumnSize="ColumnSize.Is10">
+         <TextEdit @bind-Text=confirmPassword Placeholder="New password again here..." />
+        </FieldBody>
+    </Field>
+    <Field TextAlignment="TextAlignment.Center">
+        <FieldBody ColumnSize="ColumnSize.Is12">
+            <Button Color="Color.Primary" Margin="Margin.Is2.OnX" Clicked="@HandleSave">Set Password</Button>
+            <Button Color="Color.Secondary" Margin="Margin.Is2.OnX" Clicked="@HandleBack">Back</Button>
+        </FieldBody>
+    </Field>
+}
+
+@code {
+    string pageMode = "Init";
+    string hint = "Please input your email for validating your membership.";
+    string eMail = "";
+    string valicateCode { set; get; }
+    string newPassword = "";
+    string confirmPassword = "";
+    private L_Validation validation { set; get; } = new();
+    private Service.Member member = new();
+    
+
+    #region 事件控制
+    private async Task HandleSendCode()
+    {
+        validation = await member.SendValidationEMail(eMail);
+        if (validation == null)
+            await ShowMessage("Warning", "Your EMail is not matched. Please try another one.");
+        else
+        {
+            await ShowMessage("Success", "Valicate Code has sent to you email. Please check then proceed!");
+            pageMode = "Validate";
+        }        
+    }
+
+    private async Task HandleVerify()
+    {
+        if (await member.CheckValidationCode(eMail, validation, valicateCode))
+        {
+            //await ShowMessage("Success", "Valicate Code is good! Please set your password.");
+            pageMode = "Reset";
+        }
+        else
+        {
+            await ShowMessage("Warning", "Valicate Code is not matched.");
+        }
+    }
+
+    private async Task HandleSave()
+    {
+        #region 確認新密碼
+        string errMsg = "";
+        if (string.IsNullOrEmpty(newPassword) || string.IsNullOrEmpty(confirmPassword))
+            errMsg += "Password is required.";
+        else if (newPassword != confirmPassword)
+            errMsg += "Confirm password is not the same.";
+
+        if (errMsg != "")
+        {
+            await ShowMessage("Warning", errMsg);
+            return;
+        }
+        #endregion
+
+        #region 寫入新密碼
+        S_Member sMember = member.Get(eMail);
+        sMember.Password = newPassword;
+        if (member.Update(sMember))
+        {
+            await ShowMessage("Success", "New password has been set.");
+        }
+        else
+        {
+            await ShowMessage("Warning", "New password reset failed!");
+        }
+        #endregion
+    }
+
+
+    private async Task HandleBack()
+    {
+        await js.InvokeVoidAsync("history.back", "");
+        //navi.NavigateTo() history.back();
+    }
+
+    #endregion
+
+    private async Task ShowMessage(string Type, string Msg)
+    {
+        if (Type == "Success")
+        {
+            await Message.Success(Msg, "Success: ", (x) =>
+            {
+                x.ShowMessageIcon = false;
+                x.CenterMessage = false;    //無效
+                x.MessageClass = "text-dark text-left";
+                x.TitleClass = "text-success";
+            });
+        }
+        else if (Type == "Warning")
+        {
+            await Message.Warning(Msg, "Warning: ", (x) =>
+            {
+                x.ShowMessageIcon = false;
+                x.CenterMessage = false;    //無效
+                x.MessageClass = "text-dark text-left";
+                x.TitleClass = "text-warning";
+            });
+        }
+    }
+}
