@@ -1,6 +1,8 @@
-﻿using BlazorTestV2.Database;
+﻿using Blazorise;
+using BlazorTestV2.Database;
 using BlazorTestV2.Model;
 using Dapper;
+using System.Data.SQLite;
 using System.Transactions;
 
 namespace BlazorTestV2.Service
@@ -191,7 +193,6 @@ WHERE EMail = @EMail AND Password = @Password ; ";
                 string prefix = guid.ToString().Substring(0,4);
                 #endregion
 
-                #region 寫入 L_Validation
                 L_Validation validation = new L_Validation()
                 {
                     MemberSN = member.SN,
@@ -202,71 +203,50 @@ WHERE EMail = @EMail AND Password = @Password ; ";
                     CreateDate = DateTime.Now
                 };
 
-                string sql = @"
-INSERT INTO L_Validation
-(MemberSN, Method, Prefix, TOTP, IsValidate, CreateDate)
-VALUES(@MemberSN, @Method, @Prefix, @TOTP, @IsValidate, @CreateDate); 
-
-SELECT last_insert_rowid();
-            ";
-
-                using (var conn = SQLiteHelper.dbConnection())
+                // Open the connection and start a transaction: 
+                using (var scope = new TransactionScope())
                 {
-                    validation.SN = conn.QuerySingle<int>(sql, validation);
-                    conn.Close();
-                }
-
-                #endregion
-
-                #region 發送 EMail
-                Q_EMail mail = new Q_EMail()
-                {
-                    EMailTo = member.EMail,
-                    EMailCC = "",
-                    Subject = "One time code at ShortURL",
-                    Body = $"Your one time code is {code}. Please validate betwen 10 minute.",
-                    SendCount = 0,
-                    IsSend = "N",
-                    Sender = member.SN.ToString(),
-                    CreateDate = DateTime.Now
-                };
-
-                try
-                {
-                    MySmtp smtp = new MySmtp();
-                    smtp.Send(mail.EMailTo, mail.EMailTo, mail.Subject, mail.Body);
-                    mail.SendCount++;
-                    mail.IsSend = "Y";
-                    mail.SendDate = DateTime.Now;
-                }
-                catch (Exception ex)
-                {
-                    if (ex.Message == "Smtp send fail.")
+                    using (var conn = SQLiteHelper.dbConnection())
                     {
-                        mail.IsSend = "N";
-                        mail.SendCount++;
+                        WriteValidationToDB(validation, conn);
+
+                        #region 發送 EMail
+                        Q_EMail mail = new Q_EMail()
+                        {
+                            EMailTo = member.EMail,
+                            EMailCC = "",
+                            Subject = "One time code at ShortURL",
+                            Body = $"Your one time code is {code}. Please validate betwen 10 minute.",
+                            SendCount = 0,
+                            IsSend = "N",
+                            Sender = member.SN.ToString(),
+                            CreateDate = DateTime.Now
+                        };
+
+                        try
+                        {
+                            MySmtp smtp = new MySmtp();
+                            smtp.Send(mail.EMailTo, mail.EMailTo, mail.Subject, mail.Body);
+                            mail.SendCount++;
+                            mail.IsSend = "Y";
+                            mail.SendDate = DateTime.Now;
+                        }
+                        catch (Exception ex)
+                        {
+                            if (ex.Message == "Smtp send fail.")
+                            {
+                                mail.IsSend = "N";
+                                mail.SendCount++;
+                            }
+                        }
+                        #endregion
+
+                        WriteEMailToDB(mail, conn);
+
+                        conn.Close();
                     }
-                    throw ex;
+                    scope.Complete(); //Or it will automatically rollback 
                 }
-                #endregion
-
-                #region 寫入 Q_EMail
-                string sql2 = @"
-INSERT INTO Q_EMail
-(EMailTo, EMailCC, Subject, Body, SendCount, IsSend, SendDate, Sender, CreateDate)
-VALUES(@EMailTo, @EMailCC, @Subject, @Body, @SendCount, @IsSend, @SendDate, @Sender, @CreateDate);
-
-SELECT last_insert_rowid();
-            ";
-
-                using (var conn2 = SQLiteHelper.dbConnection())
-                {
-                    mail.SN = conn2.QuerySingle<int>(sql2, mail);
-                    conn2.Close();
-                }
-
-                #endregion
-                //scope.Complete(); //Or it will automatically rollback 
                 return validation;
                 #endregion
             }
@@ -275,6 +255,34 @@ SELECT last_insert_rowid();
                 logger.LogWarning(ex.ToString());
             }
             return null;
+        }
+
+        private void WriteValidationToDB(L_Validation validation, SQLiteConnection conn)
+        {
+            #region 寫入 L_Validation
+            string sql = @"
+INSERT INTO L_Validation
+    (MemberSN, Method, Prefix, TOTP, IsValidate, CreateDate)
+VALUES(@MemberSN, @Method, @Prefix, @TOTP, @IsValidate, @CreateDate); 
+
+SELECT last_insert_rowid();
+        ";
+            validation.SN = conn.QuerySingle<int>(sql, validation);
+            #endregion
+        }
+
+        private void WriteEMailToDB(Q_EMail mail, SQLiteConnection conn)
+        {
+            #region 寫入 Q_EMail
+            string sql2 = @"
+INSERT INTO Q_EMail
+    (EMailTo, EMailCC, Subject, Body, SendCount, IsSend, SendDate, Sender, CreateDate)
+VALUES(@EMailTo, @EMailCC, @Subject, @Body, @SendCount, @IsSend, @SendDate, @Sender, @CreateDate);
+
+SELECT last_insert_rowid();
+        ";
+            mail.SN = conn.QuerySingle<int>(sql2, mail);
+            #endregion
         }
 
         /// <summary>
