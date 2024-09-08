@@ -1,7 +1,9 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
 @using BlazorTestV2.Service
+@using System.Timers
 @inject NavigationManager navi
 @inject AuthenticationStateProvider provider
+@inject MySyncService sync
 
 
 <header id="header" class="header d-flex align-items-center fixed-top">
@@ -17,13 +19,13 @@
         <BarMenu>
             <BarStart Padding="Padding.Is5.OnX">
                 <BarItem>
-                    <BarLink To="Index" Class="text-white">Home</BarLink>
+                    <BarLink To="Index" Class="text-white m-2 h5">Home</BarLink>
                 </BarItem>
                 <BarItem>
-                    <BarLink To="MyUrl" Class="text-white">My URL</BarLink>
+                    <BarLink To="MyUrl" Class="text-white m-2 h5">My URL</BarLink>
                 </BarItem>
                 <BarItem>
-                    <BarLink To="Member" Class="text-white">Membership</BarLink>
+                    <BarLink To="Member" Class="text-white m-2 h5">Membership</BarLink>
                 </BarItem>
             </BarStart>
 
@@ -32,21 +34,43 @@
                     <AuthorizeView>
                         <Authorized>
                             <Text TextColor="TextColor.White">Welcome! @context.User?.Identity?.Name</Text>
-                            <Button Class="btn-getstarted" @onclick="HandleLogout">Log out</Button>
+                             <Button Class="btn-getstarted h5" @onclick="HandleLogout">Log out</Button>
                         </Authorized>
                         <NotAuthorized>
-                            <Button Class="btn-getstarted" @onclick="HandleLogon">Log on</Button>
+                            <Button Class="btn-getstarted h5" @onclick="HandleLogon">Log on</Button>
                         </NotAuthorized>
                     </AuthorizeView>
+                    <Text TextColor="TextColor.Secondary" Class="m-3 h5">@(VistorCount.ToString() + " visitors online.")</Text>
                 </BarItem>
             </BarEnd>
-            
+                
         </BarMenu>
     </Bar>
 
 </header>
 
 @code {
+    private int VistorCount => sync.GetVisitorCount();
+    private System.Timers.Timer _timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        sync.OnVisitorChanged += this.OnVisitorChanged;
+        sync.OnUserChanged += this.OnUserChanged;
+
+        /*_timer = new();
+        _timer.Interval = 4000; //每4秒更新一次
+        _timer.Elapsed += new ElapsedEventHandler(OnTimedEvent1);
+        _timer.Enabled = true;
+        _timer.Start();*/
+    }
+
+    public async void OnTimedEvent1(object source, ElapsedEventArgs e)
+    {
+        var myProvider = (MyAuthenticationStateProvider)provider;
+        await myProvider.CheckAuthenticationState();
+    }
+
 
     private async Task HandleLogon()
     {
@@ -57,6 +81,17 @@
     {
         var myProvider = (MyAuthenticationStateProvider)provider;
         await myProvider.UpdateState(null);
+    }
+
+    private async void OnUserChanged(object? sender, EventArgs e)
+    {
+        var myProvider = (MyAuthenticationStateProvider)provider;
+        await myProvider.CheckAuthenticationState();
+    }
+
+    private void OnVisitorChanged(object? sender, EventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
     }
 
 }

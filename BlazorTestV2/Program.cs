@@ -31,14 +31,21 @@ builder.Logging.ClearProviders();
 builder.Logging.AddMyLogger();
 #endregion
 
+builder.Services.AddIdleCircuitHandler(options =>
+    options.IdleTimeout = TimeSpan.FromSeconds(20));
+
+builder.Services.AddSingleton<MySyncService>();
 builder.Services.AddScoped<AuthenticationStateProvider, MyAuthenticationStateProvider>();
 builder.Services.AddCascadingAuthenticationState();
 //builder.Services.AddSingleton<Member>();
 
+
 var app = builder.Build();
 
+#region 記錄系統啟動時間
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 logger.LogInformation("BlazorTestV2 program has started!");
+#endregion
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
