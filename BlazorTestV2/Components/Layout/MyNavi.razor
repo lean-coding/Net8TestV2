@@ -4,7 +4,38 @@
 @inject NavigationManager navi
 @inject AuthenticationStateProvider provider
 @inject MySyncService sync
+@inject IJSRuntime jscript
 
+<script>
+    // Javascript 呼叫靜態的 C# 函數 
+    window.WelcomeOnClient = () => {
+        DotNet.invokeMethodAsync('BlazorTestV2', 'WelcomeOnServer')
+            .then(data => {
+                alert('' + data);
+            });
+    };
+
+    // Javascript 呼叫非靜態的 C# 函數
+    function ILikeOnClient() {
+        NetHelpers.ILikeOnHelper();
+        // Invoke to call C# function from JavaScript.
+        //DotNet.invokeMethodAsync('BlazorAuth', 'JsUserChanged');
+    }
+
+    class NetHelpers {
+        static dotNetHelper;
+
+        static setDotNetHelper(value) {
+            NetHelpers.dotNetHelper = value;
+        }
+
+        static async ILikeOnHelper() {
+            await NetHelpers.dotNetHelper.invokeMethodAsync('ILikeOnServer');
+        }
+    }
+
+    window.NetHelpers = NetHelpers;
+</script>
 
 <header id="header" class="header d-flex align-items-center fixed-top">
 
@@ -26,14 +57,16 @@
                 </BarItem>
                 <BarItem>
                     <BarLink To="Member" Class="text-white m-2 h5">Membership</BarLink>
-                </BarItem>
+                </BarItem>                
             </BarStart>
 
             <BarEnd>
                 <BarItem>
                     <AuthorizeView>
                         <Authorized>
-                            <Text TextColor="TextColor.White">Welcome! @context.User?.Identity?.Name</Text>
+                            <Text TextColor="TextColor.White">
+                                <a onclick="WelcomeOnClient();">Welcome ! </a>
+                                @context.User?.Identity?.Name</Text>
                              <Button Class="btn-getstarted h5" @onclick="HandleLogout">Log out</Button>
                         </Authorized>
                         <NotAuthorized>
@@ -41,6 +74,9 @@
                         </NotAuthorized>
                     </AuthorizeView>
                     <Text TextColor="TextColor.Secondary" Class="m-3 h5">@(VistorCount.ToString() + " visitors online.")</Text>
+                    <a onclick="ILikeOnClient();">
+                        <Icon Name="IconName.Heart" IconStyle=@(IsLike? IconStyle.Solid : IconStyle.Regular) IconSize="IconSize.Large" Style=@(IsLike? "color:red;" : "") />
+                    </a>
                 </BarItem>
             </BarEnd>
                 
@@ -52,6 +88,11 @@
 @code {
     private int VistorCount => sync.GetVisitorCount();
     private System.Timers.Timer _timer;
+    #region IJSRuntime Testing
+    static string WelcomeMsg = "Welcome to My Short URL. Here is the most eazy way to make and share your short URL.";
+    bool IsLike { get; set; } = false;
+    private DotNetObjectReference<MyNavi>? dotNetHelper;
+    #endregion
 
     protected override async Task OnInitializedAsync()
     {
@@ -65,6 +106,21 @@
         _timer.Start();*/
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            dotNetHelper = DotNetObjectReference.Create(this);
+            await jscript.InvokeVoidAsync("NetHelpers.setDotNetHelper",
+                dotNetHelper);
+        }
+    }
+
+    public void Dispose()
+    {
+        dotNetHelper?.Dispose();
+    }
+
     public async void OnTimedEvent1(object source, ElapsedEventArgs e)
     {
         var myProvider = (MyAuthenticationStateProvider)provider;
@@ -74,7 +130,13 @@
 
     private async Task HandleLogon()
     {
-        navi.NavigateTo("/Logon");
+        string fruit = await jscript.InvokeAsync<string>("prompt", new string[] { "What's your favorite fruit?", "apple" });
+        if (!string.IsNullOrEmpty(fruit))
+        {
+            bool confirmed = await jscript.InvokeAsync<bool>("confirm", $"OK, I know your favorite fruid is \"{fruit}\". Do you want to log in? ");
+            if (confirmed)
+                navi.NavigateTo("/Logon");
+        }
     }
 
     private async Task HandleLogout()
@@ -91,6 +153,19 @@
 
     private void OnVisitorChanged(object? sender, EventArgs e)
     {
+        InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public static Task WelcomeOnServer()
+    {
+        return Task.FromResult(WelcomeMsg);
+    }
+
+    [JSInvokable]
+    public async Task ILikeOnServer()
+    {
+        IsLike = !IsLike;
         InvokeAsync(StateHasChanged);
     }
 
