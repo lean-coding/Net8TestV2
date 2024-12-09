@@ -1,0 +1,187 @@
+﻿@page "/AsyncTest"
+@inject ILogger<AsyncTest> Logger
+
+<h3>AsyncTest</h3>
+
+@if (Mode == "Test1")
+{
+    <Button Color="Color.Primary" @onclick="HandleAPlusAsync">A+</Button>
+    <Button Color="Color.Primary" @onclick="HandleBPlusAsync">B+</Button>
+}
+
+@if (Mode == "Test2")
+{
+    <Button Color="Color.Primary" @onclick="HandleGetLength">Get Length</Button>
+}
+
+@if (Mode == "Test3")
+{
+    <Button Color="Color.Primary" @onclick="HandleBPlusFakeAsync">FakeAsync</Button>
+}
+<br />
+<br />
+@((MarkupString)Message)
+
+@code {
+    string Mode = "Test3";
+
+    string Message = "";
+    int numberA = 0;
+    int numberB = 0;
+
+    #region 非同步測試
+    /// <summary>
+    /// A 每次加 1
+    /// </summary>
+    /// <returns></returns>
+    protected async Task HandleAPlusAsync()
+    {
+        numberA++;
+        await HandleBPlusAsync();
+        Message += $"{numberA}-{numberB}<br />";
+    }
+
+    /// <summary>
+    /// B 每秒增加 1
+    /// </summary>
+    /// <returns></returns>
+    public async Task HandleBPlusAsync()
+    {
+        for (int i = 0; i < 10; i++)
+        {
+            await Task.Delay(1000);
+            //Thread.Sleep(1000);
+            numberB++;
+        }
+    }
+
+    #endregion
+
+    #region 同步轉成非同步
+    /// <summary>
+    /// B 每秒增加 1
+    /// </summary>
+    /// <returns></returns>
+    public async Task<int> HandleBPlusFakeAsync()
+    {
+        for (int i = 0; i < 10; i++)
+        {
+            Thread.Sleep(1000);
+            numberB++;
+        }
+        return await Task.FromResult<int>(numberB);
+    }
+    #endregion
+
+    #region 非同步轉同步
+    public void HandleGetLength()
+    {
+        try
+        {
+            DateTime dtStart = DateTime.Now;
+            Message += $"<br/>start at ={dtStart.ToString()}";
+            //非同步轉同步
+            var content = Task.Run(() => MyDownloadPageAsync("https://news.google.com/")).Result;
+            TimeSpan ts = DateTime.Now - dtStart;
+            Message += $"<br/>網頁長度: {content.Length}, 時長:{ts.Microseconds}ms";
+            return;
+        }
+        catch { }
+    }
+
+    public async Task<int> MethodAsync()
+    {
+        // Asynchronous operation
+        await Task.Delay(1000);
+
+        return numberA++;
+    }
+
+    private void HandleGetLength2()
+    {
+        numberA++;
+        DateTime dtStart = DateTime.Now;
+        var content = "" ;
+        var uiScheduler = TaskScheduler.FromCurrentSynchronizationContext();
+        var task = MyDownloadPageAsync("https://news.google.com/");
+        task.ContinueWith(t =>
+        {
+            content = t.Result;
+            TimeSpan ts = DateTime.Now - dtStart;
+            Message += $"<br/>NumberA={numberA}, 網頁長度: {content.Length}, 時長:{ts.Microseconds}ms";
+            StateHasChanged();
+        }, uiScheduler);
+        TimeSpan ts = DateTime.Now - dtStart;
+        Message += $"<br/>NumberA={numberA}, 網頁長度: {content.Length}, 時長:{ts.Microseconds}ms, finished!";
+        StateHasChanged();
+    }
+
+    private void HandleGetLength3()
+    {
+        Message = "";
+        DateTime dtStart = DateTime.Now;
+        var uiContext = SynchronizationContext.Current;
+
+        MyDownloadPageAsync("https://news.google.com/").ContinueWith(task =>
+        {
+            uiContext.Post(delegate
+            {
+                var content = task.Result;
+                TimeSpan ts = DateTime.Now - dtStart;
+                Message += $"網頁長度: {content.Length}, 時長:{ts.Microseconds}ms";
+            }, null);
+        });
+        Message += "<br/> finished!";
+    }
+
+    public async Task HandleGetLengthAsync()
+    {
+        DateTime dtStart = DateTime.Now;
+        string content = await _httpClient.GetStringAsync("https://news.google.com/");
+        //return content;
+        //var task = MyDownloadPageAsync("https://news.google.com/");
+        //var content = await task;
+        TimeSpan ts = DateTime.Now - dtStart;
+        Message = $"網頁長度: {content.Length}, 時長:{ts.Microseconds}ms";
+    }
+
+
+
+    private static HttpClient _httpClient = new HttpClient();
+
+    private async Task<string> MyDownloadPageAsync(string url)
+    {
+        try
+        {
+            string content = await _httpClient.GetStringAsync("https://news.google.com/");
+            return content;
+        }
+        catch (Exception ex)
+        {
+            return null;
+        }
+    }
+    #endregion
+
+
+
+    private int counter{ get; set; }
+
+    private void HandleAsyncC()
+    {
+        Message += HandleTaskIntAsync().Result;
+    }
+
+    private async Task HandleTaskAsync()
+    {
+        int i = 1 + 2;
+    }
+
+    private async Task<int> HandleTaskIntAsync()
+    {
+        int i = 1 + 2;
+        return await Task.FromResult(i);
+    }
+
+
+}

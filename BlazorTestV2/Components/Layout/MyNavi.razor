@@ -66,7 +66,8 @@
                         <Authorized>
                             <Text TextColor="TextColor.White">
                                 <a onclick="WelcomeOnClient();">Welcome ! </a>
-                                @context.User?.Identity?.Name</Text>
+                                @context.User?.Identity?.Name
+                            </Text>
                              <Button Class="btn-getstarted h5" @onclick="HandleLogout">Log out</Button>
                         </Authorized>
                         <NotAuthorized>
@@ -85,9 +86,12 @@
 
 </header>
 
-@code {
+    @code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; }
+
     private int VistorCount => sync.GetVisitorCount();
-    private System.Timers.Timer _timer;
+    private System.Timers.Timer _timer;    
     #region IJSRuntime Testing
     static string WelcomeMsg = "Welcome to My Short URL. Here is the most eazy way to make and share your short URL.";
     bool IsLike { get; set; } = false;
@@ -98,6 +102,8 @@
     {
         sync.OnVisitorChanged += this.OnVisitorChanged;
         sync.OnUserChanged += this.OnUserChanged;
+
+        
 
         /*_timer = new();
         _timer.Interval = 4000; //每4秒更新一次
@@ -147,8 +153,13 @@
 
     private async void OnUserChanged(object? sender, EventArgs e)
     {
-        var myProvider = (MyAuthenticationStateProvider)provider;
-        await myProvider.CheckAuthenticationState();
+        var authState = await AuthState;
+
+        if (authState.User.Identity.IsAuthenticated)
+        {
+            var myProvider = (MyAuthenticationStateProvider)provider;
+            await myProvider.CheckAuthenticationState();
+        }
     }
 
     private void OnVisitorChanged(object? sender, EventArgs e)
