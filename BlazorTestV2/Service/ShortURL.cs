@@ -77,6 +77,30 @@ WHERE SN = @SN; ";
             }
         }
 
+        public M_URL GetByShortCode(string ShortCode)
+        {
+            try
+            {
+                string sql = @"
+SELECT * 
+FROM M_URL
+WHERE ShortCode = @ShortCode; ";
+
+                using (var conn = SQLiteHelper.dbConnection())
+                {
+                    var mURL = conn.QueryFirstOrDefault<M_URL>(sql, new { ShortCode = ShortCode });
+                    if (mURL != null)
+                        return mURL;
+                    else
+                        return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
+
         /// <summary>
         /// 以 ShortCode 反查原始網址
         /// </summary>
